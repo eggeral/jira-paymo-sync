@@ -10,7 +10,7 @@ resolvers += "Atlassian Releases" at "https://maven.atlassian.com/repository/pub
 
 libraryDependencies ++= Seq(
   "org.rogach" %% "scallop" % "0.9.5",
-  "com.atlassian.jira" % "jira-rest-java-client" % "2.0.0-m2",
+  "com.atlassian.jira" % "jira-rest-java-client-core" % "2.0.0-m31",
   "org.slf4j" % "slf4j-simple" % "1.7.10"
 )
 
