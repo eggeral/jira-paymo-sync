@@ -1,10 +1,13 @@
 package software.egger.jirapaymosync
 
+import java.lang.Iterable
 import java.net.URI
 import java.util.logging.Logger
 
 import com.atlassian.jira.rest.client.api.domain.Issue
 import com.atlassian.jira.rest.client.internal.async.AsynchronousJiraRestClientFactory
+import com.sun.jersey.api.client.Client
+import com.sun.jersey.api.client.filter.HTTPBasicAuthFilter
 import org.rogach.scallop.ScallopConf
 
 import scala.collection.JavaConversions._
@@ -39,24 +42,14 @@ object Main
 
     try
     {
-      val factory = new AsynchronousJiraRestClientFactory()
-      val uri = new URI(conf.jiraUri())
-      val jiraUser = conf.jiraUser()
+      val jiraIssues = getJiraIssues(conf)
+      val paymoClient = new PaymoClient(makePaymoRestClient(conf.paymoUser(), conf.paymoPassword()))
+      val paymoTasks = paymoClient.getPaymoTaskList(conf.paymoProjectId())
 
-      val client = factory.createWithBasicHttpAuthentication(uri, conf.jiraUser(), conf.jiraPassword())
-
-      val searchPromise = client.getSearchClient.searchJql(s"status not in (Done, Closed) AND (assignee=$jiraUser OR watcher=$jiraUser)")
-      val result = searchPromise.claim()
-      result.getIssues.foreach(issue => println(issue.getKey))
-
-      val paymoClient = new PaymoClient(conf.paymoUser(), conf.paymoPassword())
-      val paymoTaskList = paymoClient.getPaymoTaskList(conf.paymoProjectId())
-
-      paymoTaskList.foreach(println)
       var missingIssues : List[Issue] = List.empty
 
-      for{ issue <- result.getIssues } {
-        val filtered = paymoTaskList.filter(task => task.getName.startsWith(issue.getKey + " "))
+      for{ issue <- jiraIssues } {
+        val filtered = paymoTasks.filter(task => task.getName.startsWith(issue.getKey + " "))
         if (filtered.size == 0){
           missingIssues = issue :: missingIssues
         }
@@ -80,6 +73,25 @@ object Main
 
   }
 
+  def getJiraIssues(conf: Conf): Iterable[Issue] =
+  {
+    val jiraUri = new URI(conf.jiraUri())
+    val jiraUser = conf.jiraUser()
+
+    val factory = new AsynchronousJiraRestClientFactory()
+    val jiraClient = factory.createWithBasicHttpAuthentication(jiraUri, jiraUser, conf.jiraPassword())
+
+    val searchPromise = jiraClient.getSearchClient.searchJql(s"status not in (Done, Closed) AND (assignee=$jiraUser OR watcher=$jiraUser)")
+    val result = searchPromise.claim()
+    result.getIssues
+  }
+
+  private def makePaymoRestClient(user: String, password: String) : Client =
+  {
+    val restClient = Client.create()
+    restClient.addFilter(new HTTPBasicAuthFilter(user, password))
+    restClient
+  }
 
 
 }
