@@ -48,14 +48,9 @@ object Main
       val paymoClient = new PaymoClient(makePaymoRestClient(conf.paymoUser(), conf.paymoPassword()))
       val paymoTasks = paymoClient.getPaymoTaskList(conf.paymoProjectId())
 
-      for
-      {
-        taskMatch <- jiraIssues.toList matchWith paymoTasks
-        if (taskMatch.jiraIssue.isDefined && taskMatch.paymoTask.isEmpty)
-      }
-      {
-        paymoClient.createTask(conf.paymoTaskListId(), taskMatch.jiraIssue.get)
-      }
+      val taskMatches = jiraIssues.toList matchWith paymoTasks
+
+      createMissingJiraIssuesInPaymo(paymoClient, conf.paymoTaskListId(), taskMatches)
     }
     catch
       {
@@ -64,6 +59,18 @@ object Main
     logger.info("Done.")
     System.exit(0)
 
+  }
+
+  def createMissingJiraIssuesInPaymo(paymoClient: PaymoClient, taskListId: String, taskMatches: scala.Iterable[TaskMatch])
+  {
+    for
+    {
+      taskMatch <- taskMatches
+      if (taskMatch.jiraIssue.isDefined && taskMatch.paymoTask.isEmpty)
+    }
+    {
+      paymoClient.createTask(taskListId, taskMatch.jiraIssue.get)
+    }
   }
 
   def getJiraIssues(conf: Conf): Iterable[Issue] =
