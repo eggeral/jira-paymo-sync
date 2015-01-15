@@ -51,6 +51,8 @@ object Main
       val taskMatches = jiraIssues.toList matchWith paymoTasks
 
       createMissingJiraIssuesInPaymo(paymoClient, conf.paymoTaskListId(), taskMatches)
+
+      //Todo sync work log and time entries
     }
     catch
       {
@@ -66,7 +68,7 @@ object Main
     for
     {
       taskMatch <- taskMatches
-      if (taskMatch.jiraIssue.isDefined && taskMatch.paymoTask.isEmpty)
+      if taskMatch.jiraIssue.isDefined && taskMatch.paymoTask.isEmpty
     }
     {
       paymoClient.createTask(taskListId, taskMatch.jiraIssue.get)
