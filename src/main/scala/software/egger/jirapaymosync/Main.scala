@@ -9,6 +9,7 @@ import com.atlassian.jira.rest.client.internal.async.AsynchronousJiraRestClientF
 import com.sun.jersey.api.client.Client
 import com.sun.jersey.api.client.filter.HTTPBasicAuthFilter
 import org.rogach.scallop.ScallopConf
+import software.egger.jirapaymosync.TaskIssueImplicits._
 
 import scala.collection.JavaConversions._
 
@@ -26,8 +27,9 @@ class Conf(arguments: Seq[String]) extends ScallopConf(arguments)
 
 object Main
 {
+
   val logger = Logger.getLogger("software.egger.jirapaymosync.Main")
-  val paymoApiUri  =  "https://app.paymoapp.com/api/"
+  val paymoApiUri = "https://app.paymoapp.com/api/"
 
 
   def main(args: Array[String])
@@ -46,23 +48,14 @@ object Main
       val paymoClient = new PaymoClient(makePaymoRestClient(conf.paymoUser(), conf.paymoPassword()))
       val paymoTasks = paymoClient.getPaymoTaskList(conf.paymoProjectId())
 
-      var missingIssues : List[Issue] = List.empty
-
-      for{ issue <- jiraIssues } {
-        val filtered = paymoTasks.filter(task => task.getName.startsWith(issue.getKey + " "))
-        if (filtered.size == 0){
-          missingIssues = issue :: missingIssues
-        }
+      for
+      {
+        taskMatch <- jiraIssues.toList matchWith paymoTasks
+        if (taskMatch.jiraIssue.isDefined && taskMatch.paymoTask.isEmpty)
       }
-
-      println("=========")
-      for (missingIssue <- missingIssues) {
-        println(s"Creating task in Paymo")
-        val taskName = s"${missingIssue.getKey} ${missingIssue.getSummary}"
-        println(taskName)
-        paymoClient.createTask(conf.paymoTaskListId(), taskName)
+      {
+        paymoClient.createTask(conf.paymoTaskListId(), taskMatch.jiraIssue.get)
       }
-      println("=========")
     }
     catch
       {
@@ -86,13 +79,12 @@ object Main
     result.getIssues
   }
 
-  private def makePaymoRestClient(user: String, password: String) : Client =
+  private def makePaymoRestClient(user: String, password: String): Client =
   {
     val restClient = Client.create()
     restClient.addFilter(new HTTPBasicAuthFilter(user, password))
     restClient
   }
-
 
 }
 

@@ -4,6 +4,19 @@ public class Task {
     private long id;
     private String name;
 
+
+    public Task() {
+    }
+
+    public Task(String name) {
+        this(0, name);
+    }
+
+    public Task(long id, String name) {
+        this.id = id;
+        this.name = name;
+    }
+
     public long getId() {
         return id;
     }

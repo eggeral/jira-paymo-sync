@@ -6,6 +6,8 @@ version := "1.0"
 
 scalaVersion := "2.11.5"
 
+scalacOptions ++= Seq("-feature")
+
 resolvers += "Atlassian Releases" at "https://maven.atlassian.com/repository/public/"
 
 libraryDependencies ++= Seq(
