@@ -26,8 +26,8 @@ class TaskListMatcherSpec extends Spec
       taskMatches.head.jiraIssue.get.getKey should be("key1")
       taskMatches.head.paymoTask.get.getId should be(1234)
 
-      taskMatches.take(1).head.jiraIssue.get.getKey should be("key2")
-      taskMatches.take(1).head.paymoTask.get.getId should be(2345)
+      taskMatches.drop(1).head.jiraIssue.get.getKey should be("key2")
+      taskMatches.drop(1).head.paymoTask.get.getId should be(2345)
     }
 
   "A TaskMatcher" should "match Jira issues and Paymo tasks to None if no match can be found" in
@@ -45,8 +45,8 @@ class TaskListMatcherSpec extends Spec
       taskMatches.head.jiraIssue.get.getKey should be("key1")
       taskMatches.head.paymoTask should be(None)
 
-      taskMatches.take(1).head.jiraIssue should be(None)
-      taskMatches.take(1).head.paymoTask.get.getId should be(2345)
+      taskMatches.drop(1).head.jiraIssue should be(None)
+      taskMatches.drop(1).head.paymoTask.get.getId should be(2345)
     }
 
 
